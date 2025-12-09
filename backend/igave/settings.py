@@ -1,15 +1,13 @@
 import os
 from pathlib import Path
-from dotenv import load_dotenv  
+from dotenv import load_dotenv
 import dj_database_url
 
-
-    # Load environment variables
+# Load environment variables
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-    # secure your secret key
 # secure your secret key
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-for-igave-project')
 
@@ -40,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "corsheaders",
     'igaveapp',
     'rest_framework',
     'rest_framework_simplejwt',
@@ -92,7 +89,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'igave.wsgi.application'
-
+ASGI_APPLICATION = 'igave.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
