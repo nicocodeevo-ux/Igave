@@ -22,11 +22,12 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="absolute left-8 top-1/2 -translate-y-1/2 
+      className="
       bg-white/40 dark:bg-gray-700 text-yellow-400 dark:text-yellow-300 
       p-3 rounded-full shadow-lg backdrop-blur-md transition-all"
     >
       {theme === "light" ? <BsMoonFill size={20} /> : <BsSunFill size={20} />}
     </button>
+
   );
 }
