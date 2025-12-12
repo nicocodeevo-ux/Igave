@@ -38,3 +38,4 @@ package-lock.json
 .coverage
 htmlcov/
 .pytest_cache/
+google_credentials.json
