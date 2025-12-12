@@ -122,3 +122,111 @@ class ReceiptAPITest(APITestCase):
         self.client.force_authenticate(user=None)
         response = self.client.get('/api/receipts/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_create_receipt_invalid_data(self):
+        """Test creating a receipt with invalid data."""
+        # Missing required fields
+        response = self.client.post('/api/receipts/', {})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Invalid date format
+        data = {
+            'store_name': 'Invalid Date Store',
+            'date': 'not-a-date',
+            'total_amount': '100.00'
+        }
+        response = self.client.post('/api/receipts/', data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Invalid amount (non-numeric)
+        data = {
+            'store_name': 'Invalid Amount Store',
+            'date': date.today().isoformat(),
+            'total_amount': 'not-a-number'
+        }
+        response = self.client.post('/api/receipts/', data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_receipt(self):
+        """Test updating a receipt."""
+        receipt = Receipt.objects.create(
+            user=self.user,
+            store_name='Original Store',
+            date=date.today(),
+            total_amount=100.00
+        )
+        url = f'/api/receipts/{receipt.id}/'
+        data = {
+            'store_name': 'Updated Store',
+            'date': date.today().isoformat(),
+            'total_amount': '150.00'
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        receipt.refresh_from_db()
+        self.assertEqual(receipt.store_name, 'Updated Store')
+        self.assertEqual(receipt.total_amount, 150.00)
+
+    def test_delete_receipt(self):
+        """Test deleting a receipt."""
+        receipt = Receipt.objects.create(
+            user=self.user,
+            store_name='To Delete',
+            date=date.today(),
+            total_amount=50.00
+        )
+        url = f'/api/receipts/{receipt.id}/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Receipt.objects.count(), 0)
+
+    def test_update_other_user_receipt(self):
+        """Test that a user cannot update another user's receipt."""
+        other_user = User.objects.create_user(username='other', password='password')
+        receipt = Receipt.objects.create(
+            user=other_user,
+            store_name='Other User Receipt',
+            date=date.today(),
+            total_amount=100.00
+        )
+        url = f'/api/receipts/{receipt.id}/'
+        data = {
+            'store_name': 'Hacked Store',
+            'date': date.today().isoformat(),
+            'total_amount': '0.00'
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        receipt.refresh_from_db()
+        self.assertEqual(receipt.store_name, 'Other User Receipt')
+
+    def test_delete_other_user_receipt(self):
+        """Test that a user cannot delete another user's receipt."""
+        other_user = User.objects.create_user(username='other', password='password')
+        receipt = Receipt.objects.create(
+            user=other_user,
+            store_name='Other User Receipt',
+            date=date.today(),
+            total_amount=100.00
+        )
+        url = f'/api/receipts/{receipt.id}/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(Receipt.objects.count(), 1)
+
+    def test_edge_cases(self):
+        """Test edge cases for receipt creation."""
+        # Max length store name
+        long_name = 'A' * 100
+        data = {
+            'store_name': long_name,
+            'date': date.today().isoformat(),
+            'total_amount': '10.00'
+        }
+        response = self.client.post('/api/receipts/', data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Exceeding max length
+        too_long_name = 'A' * 101
+        data['store_name'] = too_long_name
+        response = self.client.post('/api/receipts/', data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
